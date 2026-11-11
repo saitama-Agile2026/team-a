@@ -30,14 +30,14 @@ gantt
 
 ## M0: 環境構築（Week1）
 
-- [ ] [Infra] Next.js(App Router) + TypeScriptプロジェクト作成、ESLint/Prettier設定
-- [ ] [Infra] Docker ComposeでローカルPostgres＋MinIO(S3互換ストレージ)構築
-- [ ] [DB] Drizzle導入、[01_proposal.md](01_proposal.md)のテーブル案を初期スキーマ化（drizzle-kit）
+- [x] [Infra] Next.js(App Router) + TypeScriptプロジェクト作成（Biomeでlint/format設定済み）
+- [x] [Infra] Docker ComposeでローカルPostgres＋MinIO(S3互換ストレージ)構築
+- [x] [DB] Drizzle導入、[01_proposal.md](01_proposal.md)のテーブル案を初期スキーマ化（drizzle-kit）
+- [x] [Infra] `.env.example`作成、[04_setup.md](04_setup.md)にセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
 - [ ] [Infra] Neon本番プロジェクト作成・接続確認（開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
 - [ ] [Infra] Vercelプロジェクト作成、デプロイ確認、環境変数登録（本番用はVercel側にのみ登録）
 - [ ] [Infra] Neon Object Storage（本番用バケット）の作成・CORS設定・public_read設定・アップロード動作確認
 - [ ] [Infra] GitHub Actionsでlint/typecheck/buildのCI設定
-- [ ] [Infra] `.env.example`作成、READMEにセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
 
 ## M1: 認証基盤（Week2）
 
