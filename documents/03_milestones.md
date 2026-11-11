@@ -31,7 +31,7 @@ gantt
 ## M0: 環境構築（Week1）
 
 - [x] [Infra] Next.js(App Router) + TypeScriptプロジェクト作成（Biomeでlint/format設定済み）
-- [x] [Infra] Docker ComposeでローカルPostgres＋MinIO(S3互換ストレージ)構築
+- [x] [Infra] Docker ComposeでローカルPostgres構築（画像のローカル保存はDocker不要なのでMinIOは使わない。経緯は[02_tech_spec.md](02_tech_spec.md)5章）
 - [x] [DB] Drizzle導入、[01_proposal.md](01_proposal.md)のテーブル案を初期スキーマ化（drizzle-kit）
 - [x] [Infra] `.env.example`作成、[04_setup.md](04_setup.md)にセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
 - [ ] [Infra] Neon本番プロジェクト作成・接続確認（開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
@@ -56,7 +56,7 @@ gantt
 - [ ] [DB] items / item_images テーブル作成
 - [ ] [BE] 出品作成API（タイトル・説明・カテゴリ・状態・欲しい物）
 - [ ] [FE] 出品作成画面
-- [ ] [BE] 画像アップロード（S3互換SDK＋presigned URL、最大3枚、形式/サイズ制限。開発はMinIO、本番はNeon Object Storage）
+- [ ] [BE] 画像アップロード（`STORAGE_DRIVER`で開発/本番を切り替え。開発はローカルディスク保存、本番はS3互換SDK＋presigned URLでNeon Object Storage。最大3枚、形式/サイズ制限）
 - [ ] [FE] ブラウザ側での画像圧縮
 - [ ] [FE] 出品一覧・詳細ページ
 - [ ] [BE] キーワード/カテゴリ/状態/欲しい物での検索・絞り込みAPI

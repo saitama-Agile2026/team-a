@@ -10,25 +10,27 @@
 
 ## 手順
 
-### 1. `.env.local`を作成
+### 1. `drizzle-kit`用の`dotenv`を追加（未インストールの場合）
+
+```bash
+bun add -d dotenv
+```
+
+`drizzle-kit`（`db:generate`/`db:migrate`/`db:studio`）はBunの自動`.env.local`読み込みに乗らないことがあるため、`drizzle.config.ts`で明示的に読み込んでいる。
+
+### 2. `.env.local`を作成
 
 ```bash
 cp .env.example .env.local
 ```
 
-値はそのまま使ってOK。すべてローカルのDocker（Postgres・MinIO）向けの値で、本番の秘密情報は入っていない。
+値はそのまま使ってOK。すべてローカルのDocker（Postgres）向けの値で、本番の秘密情報は入っていない。画像アップロード機能はM2で実装予定（開発時はローカルディスク保存、Dockerの画像ストレージは使わない）。
 
-### 2. Postgres・MinIOを起動
+### 3. Postgresを起動
 
 ```bash
 docker compose up -d
 ```
-
-### 3. MinIOにバケットを作る（最初の1回だけ）
-
-1. ブラウザで `http://localhost:9001` を開く
-2. ユーザー名・パスワードはどちらも `minioadmin`
-3. 「Create Bucket」→ バケット名 `dev-images` で作成
 
 ### 4. DBにテーブルを作成
 
@@ -50,7 +52,6 @@ bun run dev
 | 確認項目 | 方法 |
 |---|---|
 | Postgresが起動してる | `docker compose ps` で `postgres` が `Up` |
-| MinIOが起動してる | `http://localhost:9001` にログインできる |
 | テーブルができてる | `bun run db:studio` → Drizzle Studioで `users` 等のテーブルが見える |
 | Next.jsが動いてる | `http://localhost:3000` が表示される |
 
@@ -58,8 +59,9 @@ bun run dev
 
 | 症状 | 原因・対処 |
 |---|---|
-| `docker compose up`で`port is already allocated` | 5432 / 9000 / 9001 を他のアプリが使っている。そのアプリを止めるか、`docker-compose.yml`のポート番号を変更する |
+| `docker compose up`で`port is already allocated` | 5432を他のアプリ(ローカルPostgres等)が使っている。そのアプリを止めるか、`docker-compose.yml`のポート番号を変更する |
 | `bun run db:migrate`で接続エラー | `docker compose ps`でPostgresが起動しているか確認。`.env.local`の`DATABASE_URL`を確認 |
+| `bun run db:migrate`で`Please provide required params for Postgres driver: url: undefined` | `drizzle-kit`が`.env.local`を読めていない。手順1で`dotenv`を入れたか、`drizzle.config.ts`に`config({ path: ".env.local" })`があるか確認 |
 | `bun run dev`で`DATABASE_URL is not set`エラー | `.env.local`を作成し忘れている（手順2） |
 
 ## 次にやること
