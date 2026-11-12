@@ -34,8 +34,8 @@ gantt
 - [x] [Infra] Docker ComposeでローカルPostgres構築（画像のローカル保存はDocker不要なのでMinIOは使わない。経緯は[02_tech_spec.md](02_tech_spec.md)5章）
 - [x] [DB] Drizzle導入、[05_db_design.md](05_db_design.md)の設計（完成形）でスキーマ化（drizzle-kit）
 - [x] [Infra] `.env.example`作成、[04_setup.md](04_setup.md)にセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
-- [ ] [Infra] Neon本番プロジェクト作成・接続確認（開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
-- [ ] [Infra] Vercelプロジェクト作成、デプロイ確認、環境変数登録（本番用はVercel側にのみ登録）
+- [ ] [Infra] Neon本番プロジェクト作成・Vercelへの環境変数登録・接続確認（手順は[06_vercel_neon_setup.md](06_vercel_neon_setup.md)。開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
+- [x] [Infra] Vercelプロジェクト作成、デプロイ確認
 - [ ] [Infra] Neon Object Storage（本番用バケット）の作成・CORS設定・public_read設定・アップロード動作確認
 - [ ] [Infra] GitHub Actionsでlint/typecheck/buildのCI設定
 
@@ -81,6 +81,7 @@ gantt
 - [ ] [Sec] CSRF対策確認（SameSite Cookie＋トークン）
 - [ ] [Sec] SQLインジェクション対策確認（Drizzleのパラメータ化を前提に念のため確認）
 - [ ] [Sec] メールアドレス非表示（ニックネームのみ表示）の確認
+- [ ] [Sec] 動作確認用の`/health`ページを削除または管理者限定にする（DBエラー内容が誰でも見える状態のため）
 - [ ] [BE][FE] 管理者機能（アカウント無効化、出品・コメント削除）
 - [ ] [Doc] 取引禁止物のルール明記（ガイドラインページ）
 - [ ] [QA] 結合テスト・バグ修正
