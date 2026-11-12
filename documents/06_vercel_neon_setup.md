@@ -26,7 +26,9 @@ Neonコンソール → プロジェクト → **Connect** から、以下2本�
 
 ## 2. Vercelに環境変数を登録
 
-Vercel dashboard → 対象プロジェクト → **Settings → Environment Variables** で以下を追加（Environmentは`Production`のみでまずOK）。
+Vercel dashboard → 対象プロジェクト → **Settings → Environment Variables** で以下を追加。
+
+**Environmentは`Production`と`Preview`の両方にチェックを入れる。** `Production`だけだと、PR用のブランチ（Previewデプロイ）のビルドで環境変数が読み込まれずエラーになる。今の規模なら同じ値をPreviewにも配ってOK。
 
 | 変数名 | 値 | 備考 |
 |---|---|---|

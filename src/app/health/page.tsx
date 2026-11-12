@@ -2,8 +2,9 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 
-// ビルド時プリレンダー・キャッシュ対象から外し、常にリクエスト時に接続確認する
-export const dynamic = "force-dynamic";
+// Cache Components配下では、キャッシュしない動的データ（今回はDB接続確認）を
+// 使うページは`instant = false`にしないとプリレンダーでエラーになる
+export const instant = false;
 
 async function checkDb() {
   try {
