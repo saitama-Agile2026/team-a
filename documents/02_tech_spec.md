@@ -10,7 +10,7 @@
 | DB（開発） | **PostgreSQL（Docker Compose）** | 本番(Neon)と同じエンジンでローカル差異を防ぐ |
 | DB（本番） | **Neon（Serverless Postgres）** | 既定どおり |
 | ORM | **Drizzle** | SQLに近い書き方で学習コストが低い。`drizzle-kit`でマイグレーション管理、Neonとの接続実績も多い |
-| 画像保存 | **本番: Neon Object Storage**（S3互換）／**開発: ローカルファイル保存** | 本番はDBと同じNeonに統一。Singapore(ap-southeast-1)リージョンが使える。presigned URL＋CORSでブラウザ直アップロードに対応。開発はDockerの画像用S3互換イメージ(MinIO)の配布が2026年9月頃から不安定になったため、Dockerに依存しないローカルディスク保存にした。DBにはURLのみ保存（方針はproposalのまま） |
+| 画像保存 | **本番: Neon Object Storage**（S3互換）／**開発: ローカルファイル保存** | 常に自分のAPI（`/api/upload`）経由でアップロードし、サーバー側で保存先を振り分ける（開発: ローカルディスク、本番: Neon Object Storageへの`PutObject`）。ブラウザ側のコードは開発/本番で完全に同一になる。開発はDockerの画像用S3互換イメージ(MinIO)の配布が2026年9月頃から不安定になったため、Dockerに依存しないローカルディスク保存にした。DBにはURLのみ保存（方針はproposalのまま） |
 | 認証 | **Auth.js (NextAuth) Credentials Provider** | セッション管理はAuth.jsに任せる。学籍番号チェックはフロント（UX用）とサーバー（必須）の両方で同じ判定関数を使う。メール確認リンクは実装しない（なりすましリスクは管理者の無効化機能で対応） |
 | バリデーション | **zod** | フォーム入力・API入力の型安全なチェックに使う |
 | デプロイ | **Vercel**（Production / Preview） | 既定どおり |
@@ -68,17 +68,31 @@ NEXTAUTH_URL=http://localhost:3000
 
 なりすまし登録（他人の学籍番号メールで先に登録される）リスクは、proposal記載どおり**管理者による無効化機能で対応**し、メール確認リンクは実装しない。
 
-## 5. 画像アップロード（開発: ローカルディスク／本番: Neon Object Storage）
+## 5. 画像アップロード（常に自分のAPI経由／開発: ローカルディスク・本番: Neon Object Storage）
 
-画像用のS3互換Dockerイメージ（MinIO）は2026年9月頃からDocker Hub・quay.ioともに配布が不安定になり、再発の可能性もあるため、**開発環境ではDockerに依存しないローカルディスク保存**を採用する。
+画像用のS3互換Dockerイメージ（MinIO）は2026年9月頃からDocker Hub・quay.ioともに配布が不安定になり、再発の可能性もあるため、**開発環境ではDockerに依存しないローカルディスク保存**を採用する。また、開発/本番の手順差をブラウザ側に持たせないよう、**ブラウザは常に自分のAPI（`/api/upload`）に画像をPOSTする**設計にする（presigned URLでブラウザから直接ストレージにPUTする方式は採らない）。
 
-- **開発：** アップロードAPI（M2で実装）が受け取ったファイルを`public/uploads/`配下に保存し、そのパスをDBに保存。Docker・外部サービス不要
-- **本番（Neon Object Storage）：**
-  - SDK: `@aws-sdk/client-s3` ＋ `@aws-sdk/s3-request-presigner`
-  - 流れ：①ブラウザで画像を圧縮 → ②APIにpresigned PUT URLを発行してもらう → ③ブラウザから直接PUT → ④返ってきたURLをDBに保存
-  - バケットの公開設定（`public_read`）はS3 APIではなく**Neonコンソール/API側**で行う（`PutBucketAcl`は未サポート）。CORS設定も作成時に入れておく
-  - 既知の制限：バケット通知(SNS/SQS)なし、バージョニング/ライフサイクルは保存されるが効果なし。今回の用途（画像保存のみ）では影響しない
-- 開発と本番で保存先が異なるため、アップロード処理は`STORAGE_DRIVER`（`local`/`s3`）で切り替えられる薄い関数にまとめる（M2で実装）
+```mermaid
+sequenceDiagram
+    participant B as ブラウザ
+    participant API as /api/upload
+    participant Store as 保存先
+
+    B->>B: 画像を圧縮
+    B->>API: POST（画像そのもの）
+    API->>Store: 保存（開発:ローカルディスク／本番:S3 PutObject）
+    Store-->>API: 保存先URL
+    API-->>B: URLを返す
+```
+
+- **ブラウザ側のコードは開発/本番で完全に同一**（常に`/api/upload`にPOSTするだけ）
+- 差が出るのは`src/lib/image-storage.ts`の1関数だけ：
+  - **開発：** 受け取ったファイルを`public/uploads/`配下に保存し、そのパスを返す。Docker・外部サービス不要
+  - **本番：** `@aws-sdk/client-s3`で`PutObject`し、Neon Object Storageに保存。presigned URLや直PUT用のCORS設定は不要になった
+- バケットの公開設定（`public_read`）はS3 APIではなく**Neonコンソール/API側**で行う（`PutBucketAcl`は未サポート）
+- 既知の制限（Neon側）：バケット通知(SNS/SQS)なし、バージョニング/ライフサイクルは保存されるが効果なし。今回の用途（画像保存のみ）では影響しない
+- 画像はVercelの関数を経由する（ブラウザ側で圧縮済みのため、1枚あたり数百KB〜1MB程度・最大3枚を想定。Vercelのデフォルトのリクエストボディ上限に余裕で収まる）
+- 開発/本番の切り替えは`STORAGE_DRIVER`（`local`/`s3`）環境変数で行う（M2で実装）
 
 ## 6. 開発〜本番のフロー
 
