@@ -10,6 +10,26 @@
 
 ## 手順
 
+### 0. リポジトリをクローン
+
+```bash
+git clone https://github.com/saitama-Agile2026/team-a.git
+cd team-a
+```
+
+SSH接続が設定されていない場合はHTTPS版を使う。
+
+```bash
+git clone https://github.com/saitama-Agile2026/team-a.git
+cd team-a
+```
+
+依存パッケージをインストール。
+
+```bash
+bun install
+```
+
 ### 1. `drizzle-kit`用の`dotenv`を追加（未インストールの場合）
 
 ```bash
