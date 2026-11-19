@@ -13,7 +13,7 @@ import {
 } from "@/lib/validation/auth";
 
 const EMAIL_FORMAT_MESSAGE =
-  "学内のメールアドレス（siw00〜siw45）を入力してください";
+  "学内のメールアドレス（siw...＋学籍番号01〜40）を入力してください";
 
 type Props = { allowedDomain: string };
 
@@ -93,7 +93,7 @@ export function RegisterForm({ allowedDomain }: Props) {
         name="email"
         type="email"
         autoComplete="email"
-        placeholder={`siw01@${allowedDomain}`}
+        placeholder={`siw24010001@${allowedDomain}`}
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);

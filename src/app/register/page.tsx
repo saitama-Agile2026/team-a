@@ -15,7 +15,7 @@ export default function RegisterPage() {
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
       <h1 className="mb-2 text-2xl font-bold">会員登録</h1>
       <p className="mb-8 text-sm text-gray-600">
-        学内のメールアドレス（siw00〜siw45@{allowedDomain}）で登録できます。
+        学内のメールアドレス（siw...＋学籍番号01〜40@{allowedDomain}）で登録できます。
       </p>
       <RegisterForm allowedDomain={allowedDomain} />
       <p className="mt-6 text-center text-sm">

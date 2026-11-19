@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const email = normalizeEmail(parsed.data.email);
 
   if (!isAllowedEmail(email, getAllowedEmailDomain())) {
-    const message = "学内のメールアドレス（siw00〜siw45）で登録してください";
+    const message = "学内のメールアドレス（siw...＋学籍番号01〜40）で登録してください";
     return errorResponse(400, {
       error: message,
       fieldErrors: { email: message },
