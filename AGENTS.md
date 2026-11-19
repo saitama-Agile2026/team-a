@@ -11,21 +11,21 @@ AIコーディングエージェント（Claude Code等）がこのリポジト�
 
 ## 実行コマンド一覧
 
-| コマンド               | 用途                                                                   |
-| ---------------------- | ---------------------------------------------------------------------- |
+| コマンド               | 用途                                                        |
+| ---------------------- | --------------------------------------------------------- |
 | `bun install`          | 依存パッケージインストール                                             |
-| `bun run dev`          | 開発サーバー起動（`localhost:3000`）                                   |
-| `bun run build`        | プロダクションビルド                                                   |
-| `bun run start`        | ビルド後の起動確認                                                     |
-| `bun run lint`         | Biomeによるlint                                                        |
-| `bun run format`       | Biomeによる自動整形                                                    |
-| `bunx tsc --noEmit`    | 型チェック（専用scriptは未整備のため直接実行）                         |
+| `bun run dev`          | 開発サーバー起動（`localhost:3000`）                                |
+| `bun run build`        | プロダクションビルド                                                |
+| `bun run start`        | ビルド後の起動確認                                                 |
+| `bun run lint`         | Biomeによるlint（CIの`lint`ジョブも同コマンドを実行）                       |
+| `bun run format`       | Biomeによる自動整形                                              |
+| `bunx tsc --noEmit`    | 型チェック（専用scriptは未整備のため直接実行。CIの`typecheck`ジョブも同コマンドを実行）     |
 | `bun run db:generate`  | `src/db/schema.ts`からmigration SQL生成（`drizzle/`配下、git管理対象） |
-| `bun run db:migrate`   | 生成済みmigration SQLをDBに反映                                        |
-| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認                                     |
-| `docker compose up -d` | ローカルPostgres起動                                                   |
-| `docker compose ps`    | Postgres起動状態の確認                                                 |
-| `docker compose down`  | ローカルPostgres停止                                                   |
+| `bun run db:migrate`   | 生成済みmigration SQLをDBに反映                                   |
+| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認                                  |
+| `docker compose up -d` | ローカルPostgres起動                                            |
+| `docker compose ps`    | Postgres起動状態の確認                                           |
+| `docker compose down`  | ローカルPostgres停止                                            |
 
 テスト用コマンドは現時点でリポジトリに未整備（後述）。
 
@@ -71,9 +71,9 @@ flowchart LR
 
 ## CONTRIBUTING.mdとのギャップ（現状）
 
-- CONTRIBUTING.mdは「CI必須（テストカバレッジ80%以上・セキュリティスキャン等）」を謳っているが、現時点で`.github/workflows`・テストフレームワークは未整備。
-- 現状はPRを出す前に`bun run lint` / `bunx tsc --noEmit` / Docker環境での起動確認、を手動チェックとして代替する。
-- CI・テストが整備された場合は本セクションと「実行コマンド一覧」を更新すること。
+- CI整備済み（[.github/workflows/ci.yml](./.github/workflows/ci.yml)）。PR作成・更新時に`lint`/`typecheck`/`build`の3チェックが自動実行され、失敗時はmainへのマージがブロックされる（ruleset `main-protection`のrequired_status_checksで強制）。
+- 一方、CONTRIBUTING.mdが謳う「テストカバレッジ80%以上・ユニット/統合/E2Eテスト・セキュリティスキャン」はテストフレームワーク未整備のため依然未実装。
+- テストが追加された時点で、本ワークフロー（ci.yml）にtestジョブを追加し、本セクションを再度更新すること。
 
 ## その他の注意
 
