@@ -7,7 +7,8 @@
 <!-- レビュワーが再現できる確認手順 -->
 - [ ] `bun run lint`
 - [ ] `bunx tsc --noEmit`
-- [ ] Docker環境（`docker compose up -d`）での動作確認
+- [ ] `bun run dev`でNeon（本番DB）に接続して動作確認
+- [ ] （スキーマ変更時）生成されたmigration SQLの内容を確認した（`db:migrate`は実行していない）
 
 ## 関連Issue
 
