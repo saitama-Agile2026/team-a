@@ -76,6 +76,60 @@ https://〈本番ドメイン〉/health
 | 🟢 接続OK・usersテーブル件数: 0件 | Neonに繋がっていて、マイグレーションも反映済み |
 | 🔴 接続NG・エラーメッセージ表示 | `DATABASE_URL`の値、または4章のマイグレーションが未実施かを確認 |
 
-## 6. 確認できたら
+## 6. 画像ストレージ（Neon Object Storage）の動作確認
+
+バケット作成後、[#16](https://github.com/saitama-Agile2026/team-a/issues/16)の残作業（CORS設定・public_read設定・アップロード動作確認）をNeonコンソール/API側で行う（`PutBucketAcl`は未サポートなのでS3 APIではなくNeon側の設定を使う。[02_tech_spec.md](02_tech_spec.md)5章）。
+
+### 6-1. `S3_PUBLIC_BASE_URL`は何の値か（DATABASE_URLとの違い）
+
+> **`S3_PUBLIC_BASE_URL`は`postgresql://...`のDB接続文字列とは完全に別物。** `https://...`から始まる、バケットの中身をHTTP GETで読むためのURLのベース部分（＝オブジェクトのキー名より手前の部分）。
+
+| | `DATABASE_URL`（1章） | `S3_PUBLIC_BASE_URL`（本章） |
+|---|---|---|
+| 形式 | `postgresql://user:pass@host:5432/db` | `https://〈バケットのホスト名〉`（末尾に`/`なし） |
+| Pooled / Direct の区別 | **あり**（サーバーレス関数はPooled、マイグレーションはDirect） | **なし**。Object StorageはPostgresの接続プーリングと無関係のHTTP(S)エンドポイントなので、pooled/directという選択肢自体が存在しない |
+| 認証情報を含むか | 含む（パスワード） | 含まない。`public_read`設定後は誰でもGETできる公開URLなので、むしろ秘密情報を含んではいけない |
+| 用途 | DBへの読み書き（Drizzle経由） | 画像をブラウザ/`<img>`から直接読む（GETのみ） |
+
+将来M2で`/api/upload`がアップロード（`PutObject`）に使う`S3_ENDPOINT`等（[02_tech_spec.md](02_tech_spec.md)3章・5章）は、認証情報付きの別のAPIエンドポイントで、今回の`S3_PUBLIC_BASE_URL`とは別物（書き込み用 vs 読み取り専用公開URL）。混同しないこと。
+
+### 6-2. 値の取得方法
+
+**Neonコンソールのバケット画面（`.../branches/<branch-id>/storage/<bucket名>`）には、公開URLをそのままコピーできる項目は無い。** 自分でAPIから組み立てる必要がある（[Neon公式ドキュメント](https://neon.com/docs/storage/get-started)より）。
+
+1. コンソールのURLから`project_id`と`branch_id`を読み取る（例：`https://console.neon.tech/app/projects/<project_id>/branches/<branch_id>/storage/<bucket名>`の形）
+2. Neonコンソール → Account Settings → **API Keys** でAPIキーを発行する（未発行なら）
+3. 以下を実行し、レスポンスの`s3_endpoint`を確認する
+
+   ```bash
+   curl "https://console.neon.tech/api/v2/projects/<project_id>/branches/<branch_id>/storage" \
+     -H "Authorization: Bearer <NEON_API_KEY>"
+   ```
+
+   `s3_endpoint`は`https://<branch_id>.storage.c-<N>.<region>.aws.neon.tech`の形（`<N>`と`<region>`はプロジェクトによって決まる値で、レスポンスを見るまで分からない）
+4. `S3_PUBLIC_BASE_URL`には**`s3_endpoint` + `/` + バケット名**を入れる
+   - 例：`s3_endpoint`が`https://br-shy-truth-azy59lhx.storage.c-2.us-east-2.aws.neon.tech`、バケット名が`images`なら → `S3_PUBLIC_BASE_URL=https://br-shy-truth-azy59lhx.storage.c-2.us-east-2.aws.neon.tech/images`
+   - （`health-check.jpg`を置いた場合の実際の公開URLは、このベース+`/health-check.jpg`になる）
+
+`storage`エンドポイントが404の場合、そのブランチでObject Storageが有効になっていない（Object Storageは2026年11月時点でベータ機能）。
+
+### 6-3. 動作確認手順
+
+開発環境ではリポジトリ内の`public/health-check.svg`を自動で確認するので何もしなくてOK（常に🟢になる）。本番だけ以下の手順が必要。
+
+1. 確認用の画像ファイルを`health-check.jpg`という名前でバケットに置く（ファイル名固定。コード側の`HEALTH_CHECK_OBJECT_KEY`と一致させる必要がある）
+2. 6-2の手順でバケットの公開URLのベースを控える
+3. Vercel dashboard → 対象プロジェクト → **Settings → Environment Variables** に`S3_PUBLIC_BASE_URL`を追加（値＝2のベースURL。`Production`のみでよい）
+4. 2章と同様に**再デプロイ**
+5. `https://〈本番ドメイン〉/health`にアクセスし、「画像ストレージ確認」欄が🟢・画像が表示されることを確認
+
+`S3_PUBLIC_BASE_URL`は画像アップロード機能（M2）実装時にも、保存したオブジェクトの公開URLを組み立てるために使い回す想定の変数。`/health`専用の値ではない。
+
+| 表示 | 意味 |
+|---|---|
+| 🟢 表示OK・画像が見える | バケットの公開URLから正常に取得できている |
+| 🔴 表示NG・エラーメッセージ | `S3_PUBLIC_BASE_URL`の値（`postgresql://`を入れていないか等）、`health-check.jpg`の配置、またはpublic_read設定を確認 |
+
+## 7. 確認できたら
 
 `/health`はDBのエラー内容が誰でも見える状態のページなので、本番公開前には削除または管理者限定にする（[03_milestones.md](03_milestones.md) M4に追記済み）。
