@@ -1,7 +1,9 @@
 "use server";
 
-import { AuthError } from "next-auth";
+import { AuthError, CredentialsSignin } from "next-auth";
 import { signIn } from "@/auth";
+import { RATE_LIMITED_CODE } from "@/lib/auth/errors";
+import { EMAIL_LIMIT } from "@/lib/auth/rate-limit";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { loginSchema, toFieldErrors } from "@/lib/validation/auth";
 
@@ -39,6 +41,9 @@ export async function loginAction(
 }
 
 function loginErrorMessage(error: AuthError): string {
+  if (error instanceof CredentialsSignin && error.code === RATE_LIMITED_CODE) {
+    return `ログイン試行回数の上限に達しました。${EMAIL_LIMIT.lockMinutes}分ほど待ってから再度お試しください`;
+  }
   if (error.type === "CredentialsSignin") {
     // どちらが間違っているかは教えない（アカウント存在確認の防止）
     return "メールアドレスまたはパスワードが正しくありません";
