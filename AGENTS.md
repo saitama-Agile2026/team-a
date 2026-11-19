@@ -11,21 +11,22 @@ AIコーディングエージェント（Claude Code等）がこのリポジト�
 
 ## 実行コマンド一覧
 
-| コマンド               | 用途                                                        |
-| ---------------------- | --------------------------------------------------------- |
-| `bun install`          | 依存パッケージインストール                                             |
-| `bun run dev`          | 開発サーバー起動（`localhost:3000`）                                |
-| `bun run build`        | プロダクションビルド                                                |
-| `bun run start`        | ビルド後の起動確認                                                 |
-| `bun run lint`         | Biomeによるlint（CIの`lint`ジョブも同コマンドを実行）                       |
-| `bun run format`       | Biomeによる自動整形                                              |
-| `bunx tsc --noEmit`    | 型チェック（専用scriptは未整備のため直接実行。CIの`typecheck`ジョブも同コマンドを実行）     |
-| `bun run db:generate`  | `src/db/schema.ts`からmigration SQL生成（`drizzle/`配下、git管理対象） |
-| `bun run db:migrate`   | 生成済みmigration SQLをDBに反映                                   |
-| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認                                  |
-| `docker compose up -d` | ローカルPostgres起動                                            |
-| `docker compose ps`    | Postgres起動状態の確認                                           |
-| `docker compose down`  | ローカルPostgres停止                                            |
+| コマンド               | 用途                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| `bun install`          | 依存パッケージインストール                                                              |
+| `bun run dev`          | 開発サーバー起動（`localhost:3000`）                                                    |
+| `bun run build`        | プロダクションビルド                                                                    |
+| `bun run start`        | ビルド後の起動確認                                                                      |
+| `bun run lint`         | Biomeによるlint（CIの`lint`ジョブも同コマンドを実行）                                   |
+| `bun run format`       | Biomeによる自動整形                                                                     |
+| `bunx next typegen`    | `.next/types`（`LayoutProps`等のグローバル型）を生成。型チェック前に未生成なら実行      |
+| `bunx tsc --noEmit`    | 型チェック（専用scriptは未整備のため直接実行。CIの`typecheck`ジョブも同コマンドを実行） |
+| `bun run db:generate`  | `src/db/schema.ts`からmigration SQL生成（`drizzle/`配下、git管理対象）                  |
+| `bun run db:migrate`   | 生成済みmigration SQLをDBに反映                                                         |
+| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認                                                      |
+| `docker compose up -d` | ローカルPostgres起動                                                                    |
+| `docker compose ps`    | Postgres起動状態の確認                                                                  |
+| `docker compose down`  | ローカルPostgres停止                                                                    |
 
 テスト用コマンドは現時点でリポジトリに未整備（後述）。
 

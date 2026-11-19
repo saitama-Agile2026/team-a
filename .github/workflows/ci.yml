@@ -30,6 +30,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
+      # next buildが生成する.next/types(LayoutProps等のグローバル型)がないとtscが落ちるため先に生成
+      - run: bunx next typegen
       - run: bunx tsc --noEmit
 
   build:
