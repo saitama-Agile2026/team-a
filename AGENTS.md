@@ -36,7 +36,10 @@ AIコーディングエージェント（Claude Code等）がこのリポジト�
 ## 絶対禁止事項
 
 - **`main`への直接push・直接コミットは絶対禁止。** 必ず`main`からブランチを切り、PR経由でマージする。
-- **Neon（本番DB）への接続・操作はしない。** 開発環境からは本番DBに繋がらない前提で作業する。本番DBでの検証が必要な場合はコード変更やマイグレーション内容をまとめてPMに依頼する（自分で接続情報を探したり繋ぎにいったりしない）。
+- **`bun run db:migrate`（本番スキーマへの反映）はPM（kihhiさん）のみが実行する。** 他の開発者は`db:generate`でmigration SQLを生成しPRに含めるだけで、本番への反映は行わない。PRマージ後にPMが実行する。
+- **`bun run db:studio`は閲覧専用。** UIからのデータ編集・削除は行わない。
+- 確認用に作ったテストデータは、確認後に削除する（または`[TEST]`等と分かる形にする）。開発環境は本番Neonと同一DBのため、作成したデータはそのまま本番に残る。
+- Neon接続文字列（特に`DATABASE_URL_UNPOOLED`）は、Slack等の平文・公開チャンネルに貼らず、安全な方法で個別に受け渡す。
 - `.env` / `.env.local` 等の機密情報（DB接続文字列・S3キー・`NEXTAUTH_SECRET`等）をコミット・ログ出力・コード中への埋め込みをしない。
 
 ## 実行コマンド一覧
@@ -53,10 +56,7 @@ AIコーディングエージェント（Claude Code等）がこのリポジト�
 | `bunx tsc --noEmit`    | 型チェック（専用scriptは未整備のため直接実行。CIの`typecheck`ジョブも同コマンドを実行） |
 | `bun run db:generate`  | `src/db/schema.ts`からmigration SQL生成（`drizzle/`配下、git管理対象）                  |
 | `bun run db:migrate`   | 生成済みmigration SQLをDBに反映                                                         |
-| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認                                                      |
-| `docker compose up -d` | ローカルPostgres起動                                                                    |
-| `docker compose ps`    | Postgres起動状態の確認                                                                  |
-| `docker compose down`  | ローカルPostgres停止                                                                    |
+| `bun run db:studio`    | Drizzle Studioでテーブル内容を確認（本番Neon、閲覧専用）                                |
 
 テスト用コマンドは現時点でリポジトリに未整備（後述）。
 
@@ -72,33 +72,36 @@ AIコーディングエージェント（Claude Code等）がこのリポジト�
 
 ## 開発環境と本番環境の違い
 
+DBは開発・本番ともに同一のNeonに接続する（環境差異による検証コストを無くすため、2026年11月に移行）。差は画像保存先と一部の環境変数のみ。
+
 ```mermaid
 flowchart LR
     subgraph 開発環境
-      D1[Docker: Postgres] --> D2[.env.local ダミー値]
+      D1[Neon: Pooled/Direct connection] --> D2[.env.local にNeon接続文字列]
       D2 --> D3[画像はローカルディスク保存]
     end
     subgraph 本番環境 Vercel
       P1[Neon: Pooled connection] --> P2[Vercel Environment Variables]
       P2 --> P3[画像はS3 ※M2実装予定]
     end
+    D1 -.同一DB.- P1
 ```
 
-| 項目                   | 開発                                       | 本番                                                     |
-| ---------------------- | ------------------------------------------ | -------------------------------------------------------- |
-| DB                     | Docker上のPostgres（`docker-compose.yml`） | Neon（Pooled connection）                                |
-| 画像保存               | ローカルディスク                           | S3（M2実装時）                                           |
-| `DATABASE_URL`等       | `.env.local`のダミー値                     | Vercel Environment Variables                             |
-| `ALLOWED_EMAIL_DOMAIN` | `example.local`                            | 実際の学校ドメイン                                       |
-| マイグレーション実行者 | 開発者本人                                 | PM（手元で一時的に本番向けDATABASE_URLに差し替えて実行） |
+| 項目                   | 開発                                         | 本番                          |
+| ---------------------- | -------------------------------------------- | ----------------------------- |
+| DB                     | Neon（本番と同一DB、Pooled/Direct接続）      | Neon（Pooled connection）     |
+| 画像保存               | ローカルディスク                             | S3（M2実装時）                |
+| `DATABASE_URL`等       | `.env.local`にNeonの接続文字列（本番と同一） | Vercel Environment Variables  |
+| `ALLOWED_EMAIL_DOMAIN` | `example.local`                              | 実際の学校ドメイン            |
+| マイグレーション実行者 | 実行しない（`db:generate`のみ）              | PMのみ、PRマージ後に実行      |
 
 コード生成・修正時はこの差分を前提にすること。本番固有の値（ドメイン・S3設定等）をハードコードしない、環境によって挙動を分岐させる処理は`process.env`経由で行う。
 
 ## 動作検証のルール
 
-- コード変更後は**必ずDocker環境（`docker compose up -d`で起動したPostgres）で動作確認**する。ホストに別途入れたPostgres等での検証は不可（`.env.local`の値と不整合が起きるため）。
-- マイグレーションを伴う変更は `bun run db:generate` → `bun run db:migrate` → `bun run db:studio`でテーブル確認、の順で検証する。
-- **本番（Neon）での検証はエージェントの作業範囲外。** 本番相当の確認が必要な変更（マイグレーション内容・環境変数追加など）は、検証してほしい内容を明記してPMに依頼する。
+- `bun run dev`でNeon（Pooled接続）に対して動作確認する。確認用に作ったデータは本番に残るため、確認後に削除するか`[TEST]`等と分かる形にする。
+- スキーマ変更を伴う変更は `bun run db:generate` でmigration SQLを生成しPRに含める（この時点でDBへの書き込みは発生しない）。本番への反映（`bun run db:migrate`）と`db:studio`での反映確認は、PRマージ後にPMが行う。
+- **DDL（スキーマ変更の本番反映）はエージェント・開発者個人の作業範囲外。** PRに生成済みのmigration SQLを含めるところまでを行い、反映はPMに依頼する。通常のCRUD動作確認（ページ表示・API呼び出し等）は本番Neonに対して行ってよい。
 
 ## CONTRIBUTING.mdとのギャップ（現状）
 
