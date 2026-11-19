@@ -36,9 +36,9 @@ gantt
 - [x] [Infra] `.env.example`作成、[04_setup.md](04_setup.md)にセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
 - [x] [Infra] Neon本番プロジェクト作成・`DATABASE_URL`登録・接続確認（`/health`で確認済み。手順は[06_vercel_neon_setup.md](06_vercel_neon_setup.md)）
 - [x] [Infra] Vercelプロジェクト作成、デプロイ確認
-- [ ] [Infra] Neon Object Storage（本番用バケット）の作成・CORS設定・public_read設定・アップロード動作確認（[#16](https://github.com/saitama-Agile2026/team-a/issues/16)）
+- [x] [Infra] Neon Object Storage（本番用バケット）の作成・CORS設定・public_read設定・アップロード動作確認（[#16](https://github.com/saitama-Agile2026/team-a/issues/16)）
 - [x] [Infra] GitHub Actionsでlint/typecheck/buildのCI設定（[#17](https://github.com/saitama-Agile2026/team-a/issues/17)）
-- [ ] [Infra] `NEXTAUTH_SECRET`等の残り環境変数登録・本番ログイン動作確認（[#19](https://github.com/saitama-Agile2026/team-a/issues/19)。M1完了後に着手。開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
+- [x] [Infra] `NEXTAUTH_SECRET`等の残り環境変数登録・本番ログイン動作確認（[#19](https://github.com/saitama-Agile2026/team-a/issues/19)。M1完了後に着手。開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
 - [x] [Doc] `.github/ISSUE_TEMPLATE`・`PULL_REQUEST_TEMPLATE`作成（CONTRIBUTING.mdが参照しているが未作成、[#20](https://github.com/saitama-Agile2026/team-a/issues/20)）
 
 ## M1: 認証基盤（Week2）
@@ -46,14 +46,14 @@ gantt
 > 進行管理・詳細仕様は[#18](https://github.com/saitama-Agile2026/team-a/issues/18)のチェックリストを参照。
 
 - [x] [BE] usersテーブルのDrizzleスキーマ定義・マイグレーション（M0で完成形スキーマとして実装済み）
-- [ ] [BE][FE] 学内メール形式チェック関数（`siw`＋`00`-`45`＋ドメイン）を共通化し、フロント（即時エラー表示）とサーバー（必須チェック・小文字化）の両方から呼ぶ
-- [ ] [BE] パスワードハッシュ化（bcrypt等）＋会員登録API
-- [ ] [FE] 会員登録画面
-- [ ] [BE] Auth.js Credentials Providerでログイン機能
-- [ ] [FE] ログイン画面
-- [ ] [BE] ログイン試行回数制限（レートリミット）
-- [ ] [BE] 認可ミドルウェア基盤（未ログイン時リダイレクト、role判定の土台）
-- [ ] [FE] マイページ雛形（ログインユーザー情報のみ）
+- [x] [BE][FE] 学内メール形式チェック関数（`siw`＋`00`-`45`＋ドメイン）を共通化し、フロント（即時エラー表示）とサーバー（必須チェック・小文字化）の両方から呼ぶ
+- [x] [BE] パスワードハッシュ化（bcrypt等）＋会員登録API
+- [x] [FE] 会員登録画面
+- [x] [BE] Auth.js Credentials Providerでログイン機能
+- [x] [FE] ログイン画面
+- [x] [BE] ログイン試行回数制限（レートリミット）
+- [x] [BE] 認可ミドルウェア基盤（未ログイン時リダイレクト、role判定の土台）
+- [x] [FE] マイページ雛形（ログインユーザー情報のみ）
 
 ## M2: 出品・検索（Week3-4）
 

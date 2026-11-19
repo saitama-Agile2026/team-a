@@ -37,7 +37,7 @@ Vercel dashboard → 対象プロジェクト → **Settings → Environment Var
 | `NEXTAUTH_URL` | `https://〈本番ドメイン〉` | 独自ドメイン未設定なら`https://〈プロジェクト名〉.vercel.app` |
 | `ALLOWED_EMAIL_DOMAIN` | 実際の学校ドメイン | 開発時のダミー値(`example.local`)から本物に変更 |
 
-画像アップロード用の`S3_*`系はM2実装時にここに追加する（今回はまだ不要）。
+画像アップロード機能(M2)本体が使う書き込み用の認証情報はM2実装時にここに追加する（今回はまだ不要・未発行）。読み取り専用の`S3_PUBLIC_BASE_URL`は6章で別途設定済み。
 
 ## 3. 再デプロイ
 
@@ -111,7 +111,7 @@ https://〈本番ドメイン〉/health
 
 ### 6-3. 動作確認手順
 
-開発環境ではリポジトリ内の`public/health-check.svg`を自動で確認するので何もしなくてOK（常に🟢になる）。本番だけ以下の手順が必要。
+開発環境も本番と共通の`S3_PUBLIC_BASE_URL`を`.env.local`に設定する方針になったため（[02_tech_spec.md](02_tech_spec.md)3章）、開発環境でも実際にNeon Object Storageバケットへ接続して確認する（`S3_PUBLIC_BASE_URL`が未設定の場合のみ`public/health-check.svg`にフォールバックする）。Vercel（本番）側では以下の手順が必要。
 
 1. 確認用の画像ファイルを`health-check.jpg`という名前でバケットに置く（ファイル名固定。コード側の`HEALTH_CHECK_OBJECT_KEY`と一致させる必要がある）
 2. 6-2の手順でバケットの公開URLのベースを控える

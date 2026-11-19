@@ -6,7 +6,7 @@
 ## 前提
 
 - [Bun](https://bun.sh) がインストール済み（`package.json`の`packageManager`で`bun@1.3.5`指定）
-- PM（kihhiさん）からNeonの接続文字列（`DATABASE_URL`・`DATABASE_URL_UNPOOLED`の2本）を安全な方法（パスワードマネージャー等）で受け取っていること。Slack等の平文・公開チャンネルでのやり取りはしない
+- PM（kihhiさん）からNeonの接続文字列（`DATABASE_URL`・`DATABASE_URL_UNPOOLED`）と画像保存用の`S3_PUBLIC_BASE_URL`を安全な方法（パスワードマネージャー等）で受け取っていること。Slack等の平文・公開チャンネルでのやり取りはしない
 
 ## 手順
 
@@ -44,7 +44,7 @@ bun add -d dotenv
 cp .env.example .env.local
 ```
 
-`.env.local`の`DATABASE_URL`（Pooled connection）と`DATABASE_URL_UNPOOLED`（Direct connection）を、PMから受け取った実際のNeon接続文字列に書き換える。**本番DBそのものに繋がる値なので、他のメンバーや公開の場に共有しない。** 画像アップロード機能はM2で実装予定（開発時はローカルディスク保存、S3関連の設定は不要）。
+`.env.local`の`DATABASE_URL`（Pooled connection）と`DATABASE_URL_UNPOOLED`（Direct connection）、`S3_PUBLIC_BASE_URL`を、PMから受け取った実際の値に書き換える。**本番のDB・画像ストレージそのものに繋がる値なので、他のメンバーや公開の場に共有しない。** 画像アップロード機能（`/api/upload`）自体はM2で実装予定（書き込み用の認証情報はまだ無い）。
 
 ### 3. DBにテーブルを作成（スキーマ変更がある場合のみ）
 
