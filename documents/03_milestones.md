@@ -37,9 +37,9 @@ gantt
 - [x] [Infra] Neon本番プロジェクト作成・`DATABASE_URL`登録・接続確認（`/health`で確認済み。手順は[06_vercel_neon_setup.md](06_vercel_neon_setup.md)）
 - [x] [Infra] Vercelプロジェクト作成、デプロイ確認
 - [ ] [Infra] Neon Object Storage（本番用バケット）の作成・CORS設定・public_read設定・アップロード動作確認（[#16](https://github.com/saitama-Agile2026/team-a/issues/16)）
-- [ ] [Infra] GitHub Actionsでlint/typecheck/buildのCI設定（[#17](https://github.com/saitama-Agile2026/team-a/issues/17)）
+- [x] [Infra] GitHub Actionsでlint/typecheck/buildのCI設定（[#17](https://github.com/saitama-Agile2026/team-a/issues/17)）
 - [ ] [Infra] `NEXTAUTH_SECRET`等の残り環境変数登録・本番ログイン動作確認（[#19](https://github.com/saitama-Agile2026/team-a/issues/19)。M1完了後に着手。開発者個人の.env.localには入れない。PM/Infra担当のみ扱う）
-- [ ] [Doc] `.github/ISSUE_TEMPLATE`・`PULL_REQUEST_TEMPLATE`作成（CONTRIBUTING.mdが参照しているが未作成、[#20](https://github.com/saitama-Agile2026/team-a/issues/20)）
+- [x] [Doc] `.github/ISSUE_TEMPLATE`・`PULL_REQUEST_TEMPLATE`作成（CONTRIBUTING.mdが参照しているが未作成、[#20](https://github.com/saitama-Agile2026/team-a/issues/20)）
 
 ## M1: 認証基盤（Week2）
 

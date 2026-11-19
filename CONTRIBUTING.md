@@ -23,7 +23,8 @@
 
 ### 5. プルリクエスト
 
-- [PR テンプレート](./.github/PULL_REQUEST_TEMPLATE/bugfix_pr.md)に従って作成
+- 新規PR作成時は[PRテンプレート](./.github/PULL_REQUEST_TEMPLATE.md)が自動で適用されます
+- バグ修正の場合は、PR作成URLに`?template=bugfix_pr.md`を付けて[バグ修正用テンプレート](./.github/PULL_REQUEST_TEMPLATE/bugfix_pr.md)を使ってください
 - [レビューガイドライン](./.github/PULL_REQUEST_TEMPLATE/review_template.md)を参考にレビューを依頼
 
 ### 6. コードレビュー
