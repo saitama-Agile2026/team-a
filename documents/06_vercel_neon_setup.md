@@ -1,6 +1,6 @@
 # Vercel × Neon 本番環境変数セットアップ
 
-対象読者：PM/Infra担当（本番の値を扱う人）。開発者の`.env.local`には本番の値を入れない前提は変わらない（[02_tech_spec.md](02_tech_spec.md)3章）。
+対象読者：開発メンバー全員（Vercel環境変数の設定自体はPM/Infra担当が行うが、開発環境もNeon本番DBに直結するため、接続の仕組みは全員が理解しておく。[02_tech_spec.md](02_tech_spec.md)3章）。マイグレーションの反映作業（4章）はPM（kihhiさん）のみが行う。
 
 ## 0. 全体像
 
@@ -48,14 +48,10 @@ Vercel dashboard → 対象プロジェクト → **Settings → Environment Var
 
 ## 4. マイグレーションを本番DBに反映
 
-既存ルール通り、PMのローカルで一時的に`.env.local`を本番向けに差し替えて実行する。
+開発環境も常時本番Neonに接続しているため、一時的な`.env.local`の差し替えは不要。PM（kihhiさん）が、常時設定済みの`DATABASE_URL_UNPOOLED`（1章のDirect connection）を使って実行する。
 
 ```bash
-# .env.local の DATABASE_URL を、1章で取得した Direct connection 文字列に一時的に変更
-
 bun run db:migrate
-
-# 確認が終わったら .env.local を Docker用の値に戻す
 ```
 
 この時の3ルール（[02_tech_spec.md](02_tech_spec.md)6章）を忘れずに：
