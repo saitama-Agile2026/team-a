@@ -60,6 +60,16 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// ログイン試行回数制限（総当たり対策）。Vercelのサーバーレス環境ではメモリが
+// インスタンス間で共有されないため、DBで失敗回数を管理する。
+// key は "email:<小文字メール>" または "ip:<IPアドレス>"
+export const loginAttempts = pgTable("login_attempts", {
+  key: varchar("key", { length: 320 }).primaryKey(),
+  failedCount: integer("failed_count").notNull().default(0),
+  lastFailedAt: timestamp("last_failed_at").notNull().defaultNow(),
+  lockedUntil: timestamp("locked_until"),
+});
+
 export const items = pgTable(
   "items",
   {

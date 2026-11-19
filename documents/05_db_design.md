@@ -126,6 +126,22 @@ item_imagesと同じ形（`offer_id`がFK、ON DELETE CASCADE）。
 
 送信者が`trades.owner_id`か`requester_id`のどちらかであることは**API側の認可チェックで保証**する（DB制約では表現しない）。
 
+### login_attempts（ログイン試行回数制限）
+
+M1で追加。学籍番号は`siw00`〜`siw45`と推測できるため、パスワード総当たり対策としてログイン失敗回数を記録する。Vercelのサーバーレス環境ではメモリがインスタンス間で共有されないため、DBで管理する。他テーブルとのリレーションはない。
+
+| カラム | 型 | 制約 | 備考 |
+|---|---|---|---|
+| key | varchar(320) | PK | `email:<小文字メール>` または `ip:<IPアドレス>` |
+| failed_count | integer | NOT NULL, default 0 | 連続失敗回数 |
+| last_failed_at | timestamp | NOT NULL, default now() | 最後に失敗した時刻 |
+| locked_until | timestamp | NULL可 | この時刻まではログインを拒否 |
+
+- メール単位：15分以内に5回失敗で15分ロック。ログイン成功で行を削除（リセット）
+- IP単位：15分以内に30回失敗で15分ロック（学内Wi-Fiで同じIPを共有するため閾値は高め）。成功してもリセットしない
+- 未登録メールへの失敗も記録する（アカウントの存在有無を悟らせないため）
+- 閾値は`src/lib/auth/rate-limit.ts`の定数で管理
+
 ## 3. Enum一覧
 
 | Enum名 | 値 | 使用テーブル |

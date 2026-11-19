@@ -38,6 +38,10 @@ jobs:
     name: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # /register はビルド時にALLOWED_EMAIL_DOMAINを静的ページへ埋め込むため、
+    # ローカル開発の.env.localと同じダミー値をCIにも渡す（本番はVercel側の値を使用）
+    env:
+      ALLOWED_EMAIL_DOMAIN: example.local
     steps:
       - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
