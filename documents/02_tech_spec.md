@@ -7,7 +7,7 @@
 | 領域 | 選定 | 理由 |
 |---|---|---|
 | フレームワーク | **Next.js (App Router) + TypeScript** | フロント／API(Route Handlers)が1プロジェクトで完結。Vercelデプロイと相性が良い |
-| DB（開発） | **PostgreSQL（Docker Compose）** | 本番(Neon)と同じエンジンでローカル差異を防ぐ |
+| DB（開発） | **Neon（本番と同一DB、Pooled/Direct接続）** | 本番と完全に同一の環境にすることで環境差異による検証コストを無くす（2026年11月〜） |
 | DB（本番） | **Neon（Serverless Postgres）** | 既定どおり |
 | ORM | **Drizzle** | SQLに近い書き方で学習コストが低い。`drizzle-kit`でマイグレーション管理、Neonとの接続実績も多い |
 | 画像保存 | **本番: Neon Object Storage**（S3互換）／**開発: ローカルファイル保存** | 常に自分のAPI（`/api/upload`）経由でアップロードし、サーバー側で保存先を振り分ける（開発: ローカルディスク、本番: Neon Object Storageへの`PutObject`）。ブラウザ側のコードは開発/本番で完全に同一になる。開発はDockerの画像用S3互換イメージ(MinIO)の配布が2026年9月頃から不安定になったため、Dockerに依存しないローカルディスク保存にした。DBにはURLのみ保存（方針はproposalのまま） |
@@ -29,8 +29,7 @@ flowchart TB
         UI --> API[Next.js Route Handlers]
     end
     API --> DB[(PostgreSQL)]
-    DB -.開発.-> DevDB[(Docker: ローカルPostgres)]
-    DB -.本番.-> NeonDB[(Neon Postgres)]
+    DB -.開発/本番共通.-> NeonDB[(Neon Postgres)]
     API --> Obj[(画像保存)]
     Obj -.開発.-> LocalFS[(ローカルディスク\npublic/uploads)]
     Obj -.本番.-> NeonObj[(Neon Object Storage\nap-southeast-1)]
@@ -38,29 +37,31 @@ flowchart TB
 
 ## 3. 環境変数一覧
 
-開発環境は**本番の値を一切使わない**。`DATABASE_URL`はDocker Postgresに向け、画像はローカルディスクに保存するので画像用の認証情報は開発時には不要。本番の値（Neon・Vercel）はVercelの環境変数設定とPMの手元だけが知っていればよく、開発者の`.env.local`には入らない。
+DB接続のみ本番と共通（2026年11月〜、環境差異解消のため開発環境もNeon本番DBに直結）。他の環境変数（`ALLOWED_EMAIL_DOMAIN`等）は引き続き開発用ダミー値を使う。Neonの接続文字列はPM/Vercelの環境変数設定だけでなく、開発者の`.env.local`にも入る（受け渡しは安全な方法で行う）。
 
 | 変数名 | 用途 | 開発時の値 | 本番時の値（PM/Vercelのみ） |
 |---|---|---|---|
-| `DATABASE_URL` | Drizzle(postgres-js)接続先 | Docker ComposeのPostgres | Neonの接続文字列 |
+| `DATABASE_URL` | Drizzle(postgres-js)接続先 | Neonの接続文字列（Pooled） | Neonの接続文字列（Pooled） |
+| `DATABASE_URL_UNPOOLED` | drizzle-kit（generate/migrate/studio）用 | Neonの接続文字列（Direct） | PMのみが保持（Direct） |
 | `ALLOWED_EMAIL_DOMAIN` | 学内メールドメイン判定 | 検証用ダミー値（例: `example.local`） | 実際の学校ドメイン |
 | `NEXTAUTH_SECRET` | Auth.jsセッション署名鍵 | 適当なダミー文字列でOK | 本番用ランダム値（厳重管理） |
 | `NEXTAUTH_URL` | Auth.jsのベースURL | `http://localhost:3000` | 本番URL |
 
 本番用の画像ストレージ変数（`S3_ENDPOINT`等）はM2（画像アップロード実装）でVercel側にのみ追加する。開発者の`.env.local`には追加しない。
 
-`.env.example`に開発用のデフォルト値をそのまま書いておけば、リポジトリをクローンして`docker compose up`するだけで動く。`.env.local`はgitignore対象。
+`.env.example`はプレースホルダのみ。実際の接続文字列はPMから安全な方法（パスワードマネージャー等）で個別に受け取り、`.env.local`に設定する。`.env.local`はgitignore対象。
 
 ### `.env.local`（開発用）の例
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/siw_barter
+DATABASE_URL=postgresql://<user>:<password>@<project-id>-pooler.<region>.aws.neon.tech/<dbname>?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://<user>:<password>@<project-id>.<region>.aws.neon.tech/<dbname>?sslmode=require
 ALLOWED_EMAIL_DOMAIN=example.local
 NEXTAUTH_SECRET=dev-secret-anything
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-これをそのまま`.env.example`としてコミットしてOK（本番の秘密情報は含まれていない）。
+実際の値（上記の`<...>`部分）はPMから受け取る。`.env.example`にはこの形のプレースホルダのみコミットする（本番の秘密情報は含めない）。
 
 ## 4. 学内限定チェック
 
@@ -98,23 +99,25 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    dev[ローカル開発\nDocker Postgres] --> pr[PR作成]
+    dev[ローカル開発\nNeon直結(Pooled)] --> pr[PR作成]
     pr --> preview[Vercel Preview Deploy]
-    pr --> pmcheck[PMが.envを本番Neon用に\n差し替えて動作確認]
-    pmcheck -->|OK| merge[mainにmerge]
+    pr --> merge[mainにmerge]
+    merge --> migrate[PMがdb:migrateで\n本番スキーマ反映]
     merge --> prod[Vercel Production]
-    prod --> neon[(Neon Production DB)]
+    migrate --> neon[(Neon Production DB)]
+    prod --> neon
 ```
 
-### PR最終確認（本番Neon + 手動.env差し替え）について
+### PR最終確認（開発環境も本番Neonに常時接続）について
 
-**結論：今の規模（学内・小人数・無料枠）なら、このやり方で進めてOK。** ただし以下の3点は最初から徹底する。
+**結論：今の規模（学内・小人数・無料枠）なら、このやり方で進めてOK。** 開発環境と本番環境の差異による検証コストが大きくなったため、2026年11月に「開発者個人が一時的に.envを差し替える」運用から「開発環境も常時本番Neonに接続する」運用に変更した。以下の4点は最初から徹底する。
 
 1. `.env`・`.env.local` は必ず `.gitignore` に入れる（本番シークレットの誤コミット防止）
 2. Drizzleのマイグレーション（スキーマ変更時に`drizzle-kit generate`で出るSQL）は必ずPRレビュー対象にする。本番DBに当てる前に内容を確認する
 3. 本番DBに直接書き込む確認作業なので、確認用データは確認後に消す（または「テスト用」と分かるデータにする）運用ルールをPRテンプレートに書いておく
+4. 開発者個人は`bun run db:migrate`を実行しない。本番への反映はPM（kihhiさん）のみが、PRマージ後に行う
 
-**気になった場合の発展案（任意・今はやらなくてOK）：** Neonは無料枠でも「ブランチ機能」でDBのクローンを作れる。余裕が出てきたら、本番ブランチをコピーした検証用ブランチを作ってそこで確認する形にすると、本番データに触れずに済む。今は規模的にオーバースペックなので、①〜③のルール運用で十分。
+**検討した代替案：** Neonは無料枠でも「ブランチ機能」でDBのクローンを作れるため、本番ブランチをコピーした検証用ブランチで確認する案も検討した。運用がシンプルになる一方、開発/検証環境と本番のブランチが分かれることで再び環境差異が生まれるため、**ブランチ機能は使わず、全開発者が単一の本番Neon DBに直結する方針に決定した**（上記①〜④のルール運用でリスクを抑える）。
 
 ## 7. ディレクトリ構成（初期）
 
@@ -128,7 +131,6 @@ siw-barter/
 │  │  └─ schema.ts    # Drizzleのテーブル定義
 │  ├─ lib/            # auth, validation 等の共通処理
 │  └─ components/
-├─ docker-compose.yml # ローカルPostgres
 ├─ .env.example
 └─ 01_proposal.md, 02_tech_spec.md, 03_milestones.md
 ```
