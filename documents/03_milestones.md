@@ -31,7 +31,7 @@ gantt
 ## M0: 環境構築（Week1）
 
 - [x] [Infra] Next.js(App Router) + TypeScriptプロジェクト作成（Biomeでlint/format設定済み）
-- [x] [Infra] Docker ComposeでローカルPostgres構築（画像のローカル保存はDocker不要なのでMinIOは使わない。経緯は[02_tech_spec.md](02_tech_spec.md)5章）
+- [x] [Infra] Dockerに依存しない構成に変更し、開発環境もNeon（DB・Object Storage共通）に直結（経緯は[02_tech_spec.md](02_tech_spec.md)5章）
 - [x] [DB] Drizzle導入、[05_db_design.md](05_db_design.md)の設計（完成形）でスキーマ化（drizzle-kit）
 - [x] [Infra] `.env.example`作成、[04_setup.md](04_setup.md)にセットアップ手順を記載（クローン後に本番の値を一切入れずに起動できることを確認）
 - [x] [Infra] Neon本番プロジェクト作成・`DATABASE_URL`登録・接続確認（`/health`で確認済み。手順は[06_vercel_neon_setup.md](06_vercel_neon_setup.md)）
