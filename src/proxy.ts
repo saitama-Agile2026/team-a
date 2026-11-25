@@ -31,5 +31,5 @@ export const proxy = auth((req) => {
 
 export const config = {
   // APIと静的ファイルを除くすべてのページで実行し、保護対象かは routes.ts で判定する
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|uploads/).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
