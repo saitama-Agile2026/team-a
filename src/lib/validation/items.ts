@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 export const ITEM_CONDITIONS = [
   "新品同様",
@@ -9,6 +9,7 @@ export const ITEM_CONDITIONS = [
 ] as const;
 
 export const createItemSchema = z.object({
+  imageKeys: z.array(z.string().max(200)).max(3, "画像は3枚までです").refine(keys => new Set(keys).size === keys.length, "同じ画像を重複して指定できません").default([]),
   title: z
     .string()
     .trim()
