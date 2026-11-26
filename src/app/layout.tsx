@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SIW Swap",
-  description: "SIW Swap is a platform for swapping items between students.",
+  title: "くるり | SIW学内物々交換",
+  description:
+    "SIWの仲間と、教科書や日用品を交換できる学内限定の物々交換サービスです。",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
