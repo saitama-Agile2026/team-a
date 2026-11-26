@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --accent: #e66e57;
+  --accent-hover: #d55c46;
+  --soft: #fff0e7;
+  --bg: #fffdfa;
+  --text: #2d3436;
+  --muted: #8e8b87;
+  --line: #f0e6df;
+  --input: #ffffff;
+  --button-text: #ffffff;
+  --page-bg: #f1f3f6;
+  --background: #fffdfa;
+  --foreground: #2d3436;
 }
 
 @theme inline {
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-soft: var(--soft);
+  --color-bg: var(--bg);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, "Hiragino Kaku Gothic ProN", "Noto Sans JP", Meiryo, sans-serif;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 3px solid #83b2ff;
+  outline-offset: 2px;
+}
+
+/* SIW くるり専用：プロフィールアバターを完全な円形に固定 */
+.kururi-avatar {
+  width: 62px;
+  height: 62px;
+  min-width: 62px;
+  border-radius: 50%;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  background-color: var(--accent);
+  color: #ffffff;
+  font-size: 25px;
+  flex: none;
+}
+
+/* くるり専用イラストボックス */
+.kururi-illustration {
+  border-radius: 70px 24px 70px 24px;
+  background-color: var(--soft);
 }

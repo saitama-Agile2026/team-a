@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BrandHeader, KururiShell } from "@/components/kururi-shell";
 import { getAllowedEmailDomain } from "@/lib/allowed-domain";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = {
-  title: "会員登録 | SIW Swap",
+  title: "会員登録 | くるり",
 };
 
 export default function RegisterPage() {
@@ -12,19 +13,41 @@ export default function RegisterPage() {
   const allowedDomain = getAllowedEmailDomain();
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-12">
-      <h1 className="mb-2 text-2xl font-bold">会員登録</h1>
-      <p className="mb-8 text-sm text-gray-600">
-        学内のメールアドレス（siw...＋学籍番号01〜40@{allowedDomain}
-        ）で登録できます。
-      </p>
-      <RegisterForm allowedDomain={allowedDomain} />
-      <p className="mt-6 text-center text-sm">
-        登録済みの方は{" "}
-        <Link href="/login" className="text-blue-600 underline">
-          ログイン
-        </Link>
-      </p>
-    </main>
+    <KururiShell>
+      <div className="px-7 pt-[23px]">
+        <BrandHeader />
+      </div>
+
+      {/* Hero Section */}
+      <section className="px-7 pt-3 pb-2">
+        <span className="inline-flex rounded-[20px] bg-[var(--soft)] px-2.5 py-[5px] text-[11px] font-extrabold text-[var(--accent)]">
+          SIW MEMBERS ONLY
+        </span>
+        <h1 className="mt-[9px] mb-[6px] text-[27px] leading-[1.42] font-black tracking-[-0.05em] text-[var(--text)]">
+          SIWの仲間と、
+          <br />
+          モノをつなごう。
+        </h1>
+        <p className="text-[13px] leading-[1.8] text-[var(--muted)]">
+          SIWの在籍者向けサービスです。学校が認めたアカウント（siw...＋学籍番号01〜40@
+          {allowedDomain}）のみ登録できます。
+        </p>
+      </section>
+
+      {/* Register Form Panel */}
+      <div className="px-7 pt-2 pb-6">
+        <RegisterForm allowedDomain={allowedDomain} />
+
+        <p className="mt-3 text-center text-[12px] text-[var(--muted)]">
+          すでにアカウントをお持ちの方{" "}
+          <Link
+            href="/login"
+            className="font-extrabold text-[var(--accent)] hover:underline"
+          >
+            ログイン
+          </Link>
+        </p>
+      </div>
+    </KururiShell>
   );
 }

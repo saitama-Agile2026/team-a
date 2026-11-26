@@ -79,17 +79,29 @@ export function RegisterForm({ allowedDomain }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-2.5">
       {formError && (
         <p
-          className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-[12px] border border-red-300 bg-red-50 px-3.5 py-2.5 text-[12px] text-red-700"
           role="alert"
         >
           {formError}
         </p>
       )}
       <FormField
-        label="メールアドレス"
+        label="ニックネーム"
+        name="nickname"
+        type="text"
+        placeholder="例：はるか"
+        autoComplete="nickname"
+        maxLength={NICKNAME_MAX_LENGTH}
+        hint="他のユーザーに表示される名前です（メールアドレスは表示されません）"
+        error={fieldErrors.nickname}
+        compact
+        required
+      />
+      <FormField
+        label="学校メールアドレス"
         name="email"
         type="email"
         autoComplete="email"
@@ -101,33 +113,26 @@ export function RegisterForm({ allowedDomain }: Props) {
         }}
         onBlur={() => setEmailTouched(true)}
         error={emailFormatError ?? fieldErrors.email}
+        compact
         required
       />
       <FormField
         label="パスワード"
         name="password"
         type="password"
+        placeholder={`${PASSWORD_MIN_LENGTH}文字以上`}
         autoComplete="new-password"
         hint={`${PASSWORD_MIN_LENGTH}文字以上`}
         error={fieldErrors.password}
-        required
-      />
-      <FormField
-        label="ニックネーム"
-        name="nickname"
-        type="text"
-        autoComplete="nickname"
-        maxLength={NICKNAME_MAX_LENGTH}
-        hint="他のユーザーに表示される名前です（メールアドレスは表示されません）"
-        error={fieldErrors.nickname}
+        compact
         required
       />
       <button
         type="submit"
         disabled={submitting}
-        className="mt-2 rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+        className="mt-2.5 w-full cursor-pointer rounded-[13px] bg-[var(--accent)] py-[14px] text-center text-[14px] font-extrabold text-[var(--button-text)] transition-colors hover:bg-[var(--accent-hover)] active:scale-[0.99] disabled:opacity-50"
       >
-        {submitting ? "登録中..." : "登録する"}
+        {submitting ? "登録中..." : "SIWアカウントを登録する"}
       </button>
     </form>
   );
