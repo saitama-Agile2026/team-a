@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { BrandHeader, KururiShell } from "@/components/kururi-shell";
@@ -56,6 +57,16 @@ async function ItemList({ searchParams }: Props) {
               href={`/items/${item.id}`}
               className="min-w-0 rounded-2xl border border-[var(--line)] bg-white p-4 hover:border-[var(--accent)]"
             >
+              {item.imageUrl && (
+                <Image
+                  src={item.imageUrl}
+                  alt={item.title}
+                  width={200}
+                  height={150}
+                  unoptimized
+                  className="mb-3 aspect-[4/3] w-full rounded-xl object-cover"
+                />
+              )}
               <p className="text-xs text-[var(--muted)] break-words">
                 {item.category}・{item.condition}
               </p>

@@ -1,10 +1,13 @@
-﻿import "server-only";
+import "server-only";
 import { randomUUID } from "node:crypto";
 import {
   DeleteObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+
+import { isOwnedImageKey } from "@/lib/validation/items";
 
 export class StorageNotConfiguredError extends Error {}
 
@@ -47,9 +50,8 @@ function storageConfig() {
   };
 }
 
-export async function storeImages(ownerId: number, images: Buffer[]) {
-  const config = storageConfig();
-  const client = new S3Client({
+function createStorageClient(config: ReturnType<typeof storageConfig>) {
+  return new S3Client({
     endpoint: config.endpoint,
     region: config.region,
     credentials: config.credentials,
@@ -57,6 +59,11 @@ export async function storeImages(ownerId: number, images: Buffer[]) {
     requestChecksumCalculation: "WHEN_REQUIRED",
     maxAttempts: 2,
   });
+}
+
+export async function storeImages(ownerId: number, images: Buffer[]) {
+  const config = storageConfig();
+  const client = createStorageClient(config);
   const keys = images.map(() => `uploads/${ownerId}/${randomUUID()}.webp`);
   const attemptedKeys: string[] = [];
   try {
@@ -87,6 +94,56 @@ export async function storeImages(ownerId: number, images: Buffer[]) {
       console.error("[upload] failed to clean up incomplete upload");
     }
     throw error;
+  } finally {
+    client.destroy();
+  }
+}
+
+export class InvalidStoredImageError extends Error {}
+
+export async function resolveImageUrls(
+  ownerId: number,
+  keys: string[],
+): Promise<string[]> {
+  if (keys.some((key) => !isOwnedImageKey(ownerId, key))) {
+    throw new InvalidStoredImageError(
+      "自分がアップロードした画像を指定してください",
+    );
+  }
+  if (keys.length === 0) return [];
+  const config = storageConfig();
+  const client = createStorageClient(config);
+  try {
+    for (const Key of keys) {
+      try {
+        const object = await client.send(
+          new HeadObjectCommand({ Bucket: config.bucket, Key }),
+        );
+        if (
+          object.ContentType !== "image/webp" ||
+          !object.ContentLength ||
+          object.ContentLength > 1024 * 1024
+        ) {
+          throw new InvalidStoredImageError(
+            "画像を確認できませんでした。選び直してください",
+          );
+        }
+      } catch (error) {
+        if (error instanceof InvalidStoredImageError) throw error;
+        if (
+          (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
+            ?.httpStatusCode === 404
+        ) {
+          throw new InvalidStoredImageError(
+            "画像が見つかりません。選び直してください",
+          );
+        }
+        throw error;
+      }
+    }
+    return keys.map(
+      (key) => `${config.publicBaseUrl.replace(/\/+$/, "")}/${key}`,
+    );
   } finally {
     client.destroy();
   }

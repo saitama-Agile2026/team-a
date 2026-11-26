@@ -9,7 +9,14 @@ export const ITEM_CONDITIONS = [
 ] as const;
 
 export const createItemSchema = z.object({
-  imageKeys: z.array(z.string().max(200)).max(3, "画像は3枚までです").refine(keys => new Set(keys).size === keys.length, "同じ画像を重複して指定できません").default([]),
+  imageKeys: z
+    .array(z.string().max(200))
+    .max(3, "画像は3枚までです")
+    .refine(
+      (keys) => new Set(keys).size === keys.length,
+      "同じ画像を重複して指定できません",
+    )
+    .default([]),
   title: z
     .string()
     .trim()
@@ -44,3 +51,12 @@ export const createItemSchema = z.object({
 });
 
 export const itemPageSchema = z.coerce.number().int().min(1).max(10000);
+
+export function isOwnedImageKey(ownerId: number, key: string): boolean {
+  return (
+    key.startsWith(`uploads/${ownerId}/`) &&
+    /^uploads\/[1-9]\d*\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/.test(
+      key,
+    )
+  );
+}

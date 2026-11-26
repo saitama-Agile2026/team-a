@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createItemSchema, itemPageSchema } from "./items";
+import { createItemSchema, isOwnedImageKey, itemPageSchema } from "./items";
 
 const input = {
   title: " 教科書 ",
@@ -48,5 +48,32 @@ describe("itemPageSchema", () => {
     for (const value of ["0", "-1", "1.5", "abc", "10001", ["1", "2"]]) {
       expect(itemPageSchema.safeParse(value).success).toBe(false);
     }
+  });
+});
+
+describe("出品画像", () => {
+  const key = "uploads/9/12345678-1234-4123-8123-123456789abc.webp";
+  test("画像なしの既存リクエストも受け付ける", () => {
+    expect(createItemSchema.parse(input).imageKeys).toEqual([]);
+  });
+  test("画像は3枚まで、同じキーを重複させない", () => {
+    expect(
+      createItemSchema.safeParse({ ...input, imageKeys: [key] }).success,
+    ).toBe(true);
+    expect(
+      createItemSchema.safeParse({ ...input, imageKeys: [key, key] }).success,
+    ).toBe(false);
+    expect(
+      createItemSchema.safeParse({ ...input, imageKeys: ["a", "b", "c", "d"] })
+        .success,
+    ).toBe(false);
+  });
+  test("自分のアップロードキーだけを認める", () => {
+    expect(isOwnedImageKey(9, key)).toBe(true);
+    expect(isOwnedImageKey(8, key)).toBe(false);
+    expect(isOwnedImageKey(9, key.replace("/9/", "/90/"))).toBe(false);
+    expect(isOwnedImageKey(9, "uploads/9/../8/image.webp")).toBe(false);
+    expect(isOwnedImageKey(9, "https://other.example/image.webp")).toBe(false);
+    expect(isOwnedImageKey(9, `${key}?extra=1`)).toBe(false);
   });
 });

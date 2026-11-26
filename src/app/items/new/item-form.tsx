@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useRef, useState } from "react";
 import { FormField } from "@/components/form-field";
+import { ItemImagePicker } from "@/components/item-image-picker";
 import { type FieldErrors, toFieldErrors } from "@/lib/validation/auth";
 import { createItemSchema, ITEM_CONDITIONS } from "@/lib/validation/items";
 
@@ -33,13 +34,16 @@ const longFields = [
 export function ItemForm() {
   const router = useRouter();
   const submitting = useRef(false);
+  const [images, setImages] = useState<File[]>([]);
+  const [preparing, setPreparing] = useState(false);
+  const uploaded = useRef<{ files: File[]; keys: string[] } | null>(null);
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitting.current) return;
+    if (submitting.current || preparing) return;
     const parsed = createItemSchema.safeParse(
       Object.fromEntries(new FormData(event.currentTarget)),
     );
@@ -52,14 +56,35 @@ export function ItemForm() {
     submitting.current = true;
     setPending(true);
     try {
+      let imageKeys: string[] = [];
+      if (images.length > 0) {
+        if (uploaded.current?.files === images) {
+          imageKeys = uploaded.current.keys;
+        } else {
+          const form = new FormData();
+          for (const image of images) form.append("files", image);
+          const upload = await fetch("/api/upload", {
+            method: "POST",
+            body: form,
+          });
+          const result = await upload.json();
+          if (!upload.ok) {
+            setError(result.error ?? "画像の保存に失敗しました");
+            return;
+          }
+          imageKeys = result.images.map((image: { key: string }) => image.key);
+          uploaded.current = { files: images, keys: imageKeys };
+        }
+      }
       const response = await fetch("/api/items", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({ ...parsed.data, imageKeys }),
       });
       const result = await response.json();
       if (!response.ok) {
         setErrors(result.fieldErrors ?? {});
+        if (result.fieldErrors?.imageKeys) uploaded.current = null;
         setError(result.error ?? "出品に失敗しました");
         return;
       }
@@ -78,6 +103,17 @@ export function ItemForm() {
   return (
     <form onSubmit={submit} className="space-y-5">
       <fieldset disabled={pending} className="space-y-5">
+        <ItemImagePicker
+          files={images}
+          disabled={pending}
+          onChange={setImages}
+          onBusyChange={setPreparing}
+        />
+        {errors.imageKeys && (
+          <p role="alert" className="text-sm text-red-600">
+            {errors.imageKeys}
+          </p>
+        )}
         <FormField
           name="title"
           label="タイトル"
@@ -164,9 +200,14 @@ export function ItemForm() {
         />
         <button
           type="submit"
+          disabled={preparing || pending}
           className="w-full rounded-xl bg-[var(--accent)] p-3 font-bold text-white disabled:opacity-50"
         >
-          {pending ? "出品しています…" : "出品を公開する"}
+          {preparing
+            ? "画像を圧縮しています…"
+            : pending
+              ? "画像と出品を保存しています…"
+              : "出品を公開する"}
         </button>
       </fieldset>
       {error && (

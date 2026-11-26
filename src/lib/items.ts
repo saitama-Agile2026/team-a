@@ -1,5 +1,5 @@
-﻿import "server-only";
-import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
+import "server-only";
+import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { itemImages, items, users } from "@/db/schema";
 
@@ -14,6 +14,9 @@ export async function listItems(page: number) {
       condition: items.condition,
       wantedText: items.wantedText,
       nickname: users.nickname,
+      imageUrl: sql<
+        string | null
+      >`(select url from item_images where item_id = items.id order by sort_order, id limit 1)`,
     })
     .from(items)
     .innerJoin(users, eq(items.ownerId, users.id))
@@ -44,6 +47,9 @@ export async function getItem(id: number) {
       status: items.status,
       expiresAt: items.expiresAt,
       nickname: users.nickname,
+      imageUrl: sql<
+        string | null
+      >`(select url from item_images where item_id = items.id order by sort_order, id limit 1)`,
     })
     .from(items)
     .innerJoin(users, eq(items.ownerId, users.id))

@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { items } from "@/db/schema";
+import { itemImages, items } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/authz";
+import {
+  InvalidStoredImageError,
+  resolveImageUrls,
+  StorageNotConfiguredError,
+} from "@/lib/image-storage";
 import { ITEMS_PAGE_SIZE, listItems } from "@/lib/items";
 import { toFieldErrors } from "@/lib/validation/auth";
 import { createItemSchema, itemPageSchema } from "@/lib/validation/items";
@@ -88,19 +93,44 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const data = parsed.data;
-    const [item] = await db
-      .insert(items)
-      .values({
-        ...data,
-        ownerId: user.id,
-        wantedCategory: data.wantedCategory || null,
-        wantedText: data.wantedText || null,
-        pickupNote: data.pickupNote || null,
-      })
-      .returning({ id: items.id });
+    const { imageKeys, ...data } = parsed.data;
+    const urls = await resolveImageUrls(user.id, imageKeys);
+    const item = await db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(items)
+        .values({
+          ...data,
+          ownerId: user.id,
+          wantedCategory: data.wantedCategory || null,
+          wantedText: data.wantedText || null,
+          pickupNote: data.pickupNote || null,
+        })
+        .returning({ id: items.id });
+      if (urls.length > 0) {
+        await tx.insert(itemImages).values(
+          urls.map((url, sortOrder) => ({
+            itemId: created.id,
+            url,
+            sortOrder,
+          })),
+        );
+      }
+      return created;
+    });
     return NextResponse.json(item, { status: 201 });
-  } catch {
+  } catch (error) {
+    if (error instanceof InvalidStoredImageError) {
+      return NextResponse.json(
+        { error: error.message, fieldErrors: { imageKeys: error.message } },
+        { status: 400 },
+      );
+    }
+    if (error instanceof StorageNotConfiguredError) {
+      return NextResponse.json(
+        { error: "画像保存の設定を確認してください" },
+        { status: 503 },
+      );
+    }
     console.error("[items] failed to create item");
     return NextResponse.json(
       { error: "出品に失敗しました。時間をおいて再度お試しください" },
