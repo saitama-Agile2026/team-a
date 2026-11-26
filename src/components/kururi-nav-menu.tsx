@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { href: "/login", label: "ログイン" },
   { href: "/register", label: "会員登録" },
   { href: "/mypage", label: "マイページ" },
+  { href: "/items", label: "出品一覧" },
+  { href: "/items/new", label: "出品する" },
 ] as const;
 
 export function KururiNavMenu({ variant = "default" }: Props) {

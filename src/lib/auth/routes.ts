@@ -2,7 +2,7 @@
 // M2/M3/M4 で保護ページを追加するときは、ここにパスの先頭を追加する。
 
 /** ログイン必須のパス（前方一致） */
-export const PROTECTED_PREFIXES = ["/mypage"] as const;
+export const PROTECTED_PREFIXES = ["/mypage", "/items"] as const;
 
 /** 管理者（role = admin）のみのパス（前方一致）。M4で使う */
 export const ADMIN_PREFIXES = ["/admin"] as const;
