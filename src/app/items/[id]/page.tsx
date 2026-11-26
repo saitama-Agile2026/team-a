@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { BrandHeader, KururiShell } from "@/components/kururi-shell";
 import { requireUser } from "@/lib/auth/authz";
 import { getItem, getItemImages } from "@/lib/items";
+import { offerUnavailableReason } from "@/lib/validation/offers";
 
 type Props = { params: Promise<{ id: string }> };
 const statusLabels = {
@@ -77,6 +78,14 @@ async function ItemDetail({ params }: Props) {
           </div>
         ))}
       </dl>
+      {!offerUnavailableReason(item, user.id) && (
+        <Link
+          href={`/items/${id}/offer`}
+          className="block rounded-xl bg-[var(--accent)] p-3 text-center font-bold text-white"
+        >
+          この出品に交換を申し込む
+        </Link>
+      )}
       <Link href="/items" className="block text-sm underline">
         出品一覧に戻る
       </Link>

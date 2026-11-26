@@ -7,6 +7,7 @@ import { FormField } from "@/components/form-field";
 import { ItemImagePicker } from "@/components/item-image-picker";
 import { type FieldErrors, toFieldErrors } from "@/lib/validation/auth";
 import { createItemSchema, ITEM_CONDITIONS } from "@/lib/validation/items";
+import { createOfferSchema } from "@/lib/validation/offers";
 
 const textareaClass =
   "w-full rounded-xl border border-[var(--line)] bg-white p-3 text-sm";
@@ -31,12 +32,14 @@ const longFields = [
   },
 ] as const;
 
-export function ItemForm() {
+export function ItemForm({ offerItemId }: { offerItemId?: number }) {
   const router = useRouter();
   const submitting = useRef(false);
   const [images, setImages] = useState<File[]>([]);
   const [preparing, setPreparing] = useState(false);
   const uploaded = useRef<{ files: File[]; keys: string[] } | null>(null);
+  const [sent, setSent] = useState(false);
+  const schema = offerItemId ? createOfferSchema : createItemSchema;
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [error, setError] = useState("");
@@ -44,7 +47,7 @@ export function ItemForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting.current || preparing) return;
-    const parsed = createItemSchema.safeParse(
+    const parsed = schema.safeParse(
       Object.fromEntries(new FormData(event.currentTarget)),
     );
     setError("");
@@ -76,29 +79,53 @@ export function ItemForm() {
           uploaded.current = { files: images, keys: imageKeys };
         }
       }
-      const response = await fetch("/api/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...parsed.data, imageKeys }),
-      });
+      const response = await fetch(
+        offerItemId ? `/api/items/${offerItemId}/offers` : "/api/items",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...parsed.data, imageKeys }),
+        },
+      );
       const result = await response.json();
       if (!response.ok) {
         setErrors(result.fieldErrors ?? {});
         if (result.fieldErrors?.imageKeys) uploaded.current = null;
-        setError(result.error ?? "出品に失敗しました");
+        setError(
+          result.error ??
+            (offerItemId ? "要望の送信に失敗しました" : "出品に失敗しました"),
+        );
+        return;
+      }
+      if (offerItemId) {
+        setSent(true);
         return;
       }
       router.push(`/items/${result.id}`);
       router.refresh();
     } catch {
       setError(
-        "通信に失敗しました。送信済みの可能性もあるため、一覧を確認してから再度お試しください。",
+        offerItemId
+          ? "通信に失敗しました。同じ内容で再送信すると、送信済みの場合はその要望が返されます。"
+          : "通信に失敗しました。送信済みの可能性もあるため、一覧を確認してから再度お試しください。",
       );
     } finally {
       submitting.current = false;
       setPending(false);
     }
   }
+
+  if (sent)
+    return (
+      <div className="space-y-4">
+        <output className="block font-bold">
+          交換の要望を送信しました。出品者の確認をお待ちください。
+        </output>
+        <Link href={`/items/${offerItemId}`} className="block underline">
+          出品詳細に戻る
+        </Link>
+      </div>
+    );
 
   return (
     <form onSubmit={submit} className="space-y-5">
@@ -116,7 +143,7 @@ export function ItemForm() {
         )}
         <FormField
           name="title"
-          label="タイトル"
+          label={offerItemId ? "差し出す物のタイトル" : "タイトル"}
           maxLength={100}
           required
           error={errors.title}
@@ -161,43 +188,72 @@ export function ItemForm() {
             </p>
           )}
         </div>
-        {longFields.map((field) => (
-          <div key={field.name}>
-            <label
-              htmlFor={field.name}
-              className="mb-2 block text-sm font-bold"
-            >
-              {field.label}
+        {longFields
+          .filter((field) => !offerItemId || field.name === "description")
+          .map((field) => (
+            <div key={field.name}>
+              <label
+                htmlFor={field.name}
+                className="mb-2 block text-sm font-bold"
+              >
+                {field.label}
+              </label>
+              <textarea
+                id={field.name}
+                name={field.name}
+                maxLength={field.max}
+                required={field.required}
+                rows={4}
+                aria-invalid={!!errors[field.name]}
+                aria-describedby={
+                  errors[field.name] ? `${field.name}-error` : undefined
+                }
+                className={textareaClass}
+              />
+              {errors[field.name] && (
+                <p
+                  id={`${field.name}-error`}
+                  role="alert"
+                  className="text-sm text-red-600"
+                >
+                  {errors[field.name]}
+                </p>
+              )}
+            </div>
+          ))}
+        {offerItemId ? (
+          <div>
+            <label htmlFor="message" className="mb-2 block text-sm font-bold">
+              出品者へのメッセージ
             </label>
             <textarea
-              id={field.name}
-              name={field.name}
-              maxLength={field.max}
-              required={field.required}
+              id="message"
+              name="message"
+              required
+              maxLength={2000}
               rows={4}
-              aria-invalid={!!errors[field.name]}
-              aria-describedby={
-                errors[field.name] ? `${field.name}-error` : undefined
-              }
               className={textareaClass}
+              aria-invalid={!!errors.message}
+              aria-describedby={errors.message ? "message-error" : undefined}
             />
-            {errors[field.name] && (
+            {errors.message && (
               <p
-                id={`${field.name}-error`}
+                id="message-error"
                 role="alert"
                 className="text-sm text-red-600"
               >
-                {errors[field.name]}
+                {errors.message}
               </p>
             )}
           </div>
-        ))}
-        <FormField
-          name="wantedCategory"
-          label="欲しい物のカテゴリ（任意）"
-          maxLength={50}
-          error={errors.wantedCategory}
-        />
+        ) : (
+          <FormField
+            name="wantedCategory"
+            label="欲しい物のカテゴリ（任意）"
+            maxLength={50}
+            error={errors.wantedCategory}
+          />
+        )}
         <button
           type="submit"
           disabled={preparing || pending}
@@ -206,8 +262,10 @@ export function ItemForm() {
           {preparing
             ? "画像を圧縮しています…"
             : pending
-              ? "画像と出品を保存しています…"
-              : "出品を公開する"}
+              ? "画像と入力内容を送信しています…"
+              : offerItemId
+                ? "交換の要望を送信する"
+                : "出品を公開する"}
         </button>
       </fieldset>
       {error && (

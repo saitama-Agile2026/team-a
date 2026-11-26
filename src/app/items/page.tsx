@@ -3,10 +3,13 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { BrandHeader, KururiShell } from "@/components/kururi-shell";
 import { requireUser } from "@/lib/auth/authz";
+import { itemSearchHref, itemSearchSchema } from "@/lib/item-search";
 import { ITEMS_PAGE_SIZE, listItems } from "@/lib/items";
-import { itemPageSchema } from "@/lib/validation/items";
+import { ITEM_CONDITIONS } from "@/lib/validation/items";
 
-type Props = { searchParams: Promise<{ page?: string | string[] }> };
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export default function ItemsPage(props: Props) {
   return (
@@ -33,20 +36,104 @@ export default function ItemsPage(props: Props) {
 async function ItemList({ searchParams }: Props) {
   await requireUser();
   const query = await searchParams;
-  const parsed = itemPageSchema.safeParse(query.page ?? 1);
+  const parsed = itemSearchSchema.safeParse(query);
   if (!parsed.success)
     return (
       <p>
-        ページ番号が正しくありません。
+        検索条件が正しくありません。
         <Link href="/items" className="underline">
           一覧に戻る
         </Link>
       </p>
     );
-  const page = parsed.data;
-  const rows = await listItems(page);
+  const search = parsed.data;
+  const page = search.page;
+  const rows = await listItems(page, search);
   return (
     <>
+      <form
+        key={itemSearchHref(search, 1)}
+        action="/items"
+        method="get"
+        className="mb-6 space-y-3 rounded-2xl border border-[var(--line)] p-4"
+      >
+        <div>
+          <label htmlFor="search-q" className="mb-1 block text-sm font-bold">
+            キーワード
+          </label>
+          <input
+            id="search-q"
+            name="q"
+            defaultValue={search.q}
+            maxLength={100}
+            placeholder="タイトル・説明から検索"
+            className="w-full rounded-xl border border-[var(--line)] bg-white p-3 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="search-category"
+            className="mb-1 block text-sm font-bold"
+          >
+            カテゴリ（完全一致）
+          </label>
+          <input
+            id="search-category"
+            name="category"
+            defaultValue={search.category}
+            maxLength={50}
+            className="w-full rounded-xl border border-[var(--line)] bg-white p-3 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="search-condition"
+            className="mb-1 block text-sm font-bold"
+          >
+            商品の状態
+          </label>
+          <select
+            id="search-condition"
+            name="condition"
+            defaultValue={search.condition}
+            className="w-full rounded-xl border border-[var(--line)] bg-white p-3 text-sm"
+          >
+            <option value="">すべて</option>
+            {ITEM_CONDITIONS.map((condition) => (
+              <option key={condition} value={condition}>
+                {condition}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="search-wanted"
+            className="mb-1 block text-sm font-bold"
+          >
+            交換で欲しい物
+          </label>
+          <input
+            id="search-wanted"
+            name="wanted"
+            defaultValue={search.wanted}
+            maxLength={100}
+            placeholder="欲しい物・欲しいカテゴリから検索"
+            className="w-full rounded-xl border border-[var(--line)] bg-white p-3 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            className="rounded-xl bg-[var(--accent)] px-5 py-2 font-bold text-white"
+          >
+            検索する
+          </button>
+          <Link href="/items" className="text-sm underline">
+            条件をクリア
+          </Link>
+        </div>
+      </form>
       {rows.length === 0 ? (
         <p className="py-8 text-[var(--muted)]">表示できる出品はありません。</p>
       ) : (
@@ -83,14 +170,14 @@ async function ItemList({ searchParams }: Props) {
       )}
       <nav aria-label="一覧のページ" className="mt-6 flex justify-between">
         {page > 1 ? (
-          <Link href={`/items?page=${page - 1}`} className="underline">
+          <Link href={itemSearchHref(search, page - 1)} className="underline">
             前のページ
           </Link>
         ) : (
           <span />
         )}
         {rows.length > ITEMS_PAGE_SIZE && (
-          <Link href={`/items?page=${page + 1}`} className="underline">
+          <Link href={itemSearchHref(search, page + 1)} className="underline">
             次のページ
           </Link>
         )}

@@ -7,9 +7,10 @@ import {
   resolveImageUrls,
   StorageNotConfiguredError,
 } from "@/lib/image-storage";
+import { itemSearchSchema } from "@/lib/item-search";
 import { ITEMS_PAGE_SIZE, listItems } from "@/lib/items";
 import { toFieldErrors } from "@/lib/validation/auth";
-import { createItemSchema, itemPageSchema } from "@/lib/validation/items";
+import { createItemSchema } from "@/lib/validation/items";
 
 export async function GET(request: Request) {
   try {
@@ -19,15 +20,29 @@ export async function GET(request: Request) {
         { status: 401 },
       );
     }
-    const page = itemPageSchema.safeParse(
-      new URL(request.url).searchParams.get("page") ?? 1,
-    );
-    if (!page.success)
+    const query = new URL(request.url).searchParams;
+    const input = Object.fromEntries(query);
+    if (
+      ["page", "q", "category", "condition", "wanted"].some(
+        (key) => query.getAll(key).length > 1,
+      )
+    ) {
       return NextResponse.json(
-        { error: "ページ番号が正しくありません" },
+        { error: "同じ検索条件を複数指定できません" },
         { status: 400 },
       );
-    const rows = await listItems(page.data);
+    }
+    const parsed = itemSearchSchema.safeParse(input);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: "検索条件を確認してください",
+          fieldErrors: toFieldErrors(parsed.error),
+        },
+        { status: 400 },
+      );
+    }
+    const rows = await listItems(parsed.data.page, parsed.data);
     return NextResponse.json(
       {
         items: rows.slice(0, ITEMS_PAGE_SIZE),

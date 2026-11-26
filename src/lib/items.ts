@@ -1,11 +1,13 @@
 import "server-only";
-import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { itemImages, items, users } from "@/db/schema";
 
+import { containsPattern, type ItemSearch } from "./item-search";
+
 export const ITEMS_PAGE_SIZE = 12;
 
-export async function listItems(page: number) {
+export async function listItems(page: number, search?: ItemSearch) {
   return db
     .select({
       id: items.id,
@@ -23,6 +25,20 @@ export async function listItems(page: number) {
     .where(
       and(
         eq(items.status, "open"),
+        search?.q
+          ? or(
+              ilike(items.title, containsPattern(search.q)),
+              ilike(items.description, containsPattern(search.q)),
+            )
+          : undefined,
+        search?.category ? eq(items.category, search.category) : undefined,
+        search?.condition ? eq(items.condition, search.condition) : undefined,
+        search?.wanted
+          ? or(
+              ilike(items.wantedText, containsPattern(search.wanted)),
+              ilike(items.wantedCategory, containsPattern(search.wanted)),
+            )
+          : undefined,
         eq(users.isActive, true),
         or(isNull(items.expiresAt), gt(items.expiresAt, new Date())),
       ),
